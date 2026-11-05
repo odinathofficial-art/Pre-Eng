@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Clerk Mains</title>
+<style>
+  :root {
+    --bg: #eef3f8;
+    --card: #ffffff;
+    --ink: #0f2236;
+    --side: #0b3d5c;
+    --sideink: #d6e8f5;
+    --acc: #ff7a1a;
+    --line: #dbe4ee;
+    --mut: #5d7186;
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme=light]) {
+      --bg: #0d1621; --card: #16222f; --ink: #e8f0f7; --side: #08283d; --line: #263646; --mut: #8fa3b6;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+  #app { position: absolute; inset: 0; display: flex; }
+  @media (orientation: portrait) {
+    #app { inset: auto; top: 0; left: 100vw; width: 100vh; height: 100vw; transform-origin: top left; transform: rotate(90deg); }
+  }
+
+  aside { width: 26%; max-width: 34vmin; background: var(--side); color: var(--sideink);
+    display: flex; flex-direction: column; gap: 1vmin;
+    padding: max(env(safe-area-inset-top), 2vmin) 2vmin 2vmin max(env(safe-area-inset-left), 2vmin); }
+  .brand { font-size: 3.6vmin; font-weight: 800; color: #fff; line-height: 1.1; margin-bottom: 2vmin; }
+  .brand span { color: var(--acc); }
+  .tag { padding: 1.6vmin 1.8vmin; border-radius: 10px; background: var(--acc); color: #fff; font-size: 2.6vmin; font-weight: 600; }
+  .tag small { display: block; font-size: 1.8vmin; font-weight: 400; opacity: .85; margin-top: .4vmin; }
+
+  .wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto;
+    padding: max(env(safe-area-inset-top), 2vmin) max(env(safe-area-inset-right), 3vmin) 2.4vmin 3vmin; }
+  h1 { font-size: 4.2vmin; }
+  .subtitle { color: var(--mut); font-size: 2.2vmin; margin: .6vmin 0 1.8vmin; }
+
+  .crumb { display: none; align-items: center; gap: 1vmin; margin: 0 0 2vmin; }
+  .crumb.show { display: flex; }
+  .crumb button { font: inherit; font-size: 2.2vmin; font-weight: 600; cursor: pointer; padding: 1.2vmin 2.2vmin;
+    border-radius: 99px; border: 1.5px solid var(--line); background: var(--card); color: var(--ink); }
+  .crumb button:hover { background: var(--ink); color: var(--bg); }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vmin; align-content: start; }
+  .list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vmin; align-content: start; }
+  .grid:not(.hidden), .list:not(.hidden) { animation: f .25s; }
+  @keyframes f { from { opacity: 0; transform: translateX(1.5vmin); } }
+
+  .card { display: flex; align-items: center; gap: 2vmin; background: var(--card); border: 1px solid var(--line);
+    border-left: 1vmin solid var(--acc); border-radius: 12px; padding: 2.4vmin; cursor: pointer; color: var(--ink);
+    min-height: 14vmin; transition: .15s; }
+  .card:hover, .card:active { transform: translateY(-.5vmin); box-shadow: 0 8px 18px rgba(0,0,0,.12); }
+  .card:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+  .folder-icon, .file-icon { flex: 0 0 auto; width: 6vmin; height: 5.4vmin; }
+  .folder-icon svg, .file-icon svg { width: 100%; height: 100%; display: block; }
+  .folder-icon svg path, .file-icon svg path { stroke: var(--acc); }
+  .card-label { font-size: 2.6vmin; font-weight: 700; }
+
+  .status { text-align: center; color: var(--mut); font-size: 2.2vmin; padding: 6vmin 0; }
+  .spinner-wrap { display: flex; justify-content: center; padding: 6vmin 0; }
+  .spinner { width: 7vmin; height: 7vmin; border-radius: 50%; border: 3px solid var(--line);
+    border-top-color: var(--acc); animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+    .spinner { animation: none; }
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+  <div id="app">
+    <aside>
+      <div class="brand">Last<span>Attempt</span></div>
+      <div class="tag">Clerk Mains<small>English</small></div>
+    </aside>
+
+    <div class="wrap">
+      <h1>Clerk Mains</h1>
+      <p class="subtitle" id="subtitle">Choose a English section to continue</p>
+
+      <div class="crumb" id="crumb">
+        <button id="backBtn">&larr; Back to folders</button>
+      </div>
+
+      <div id="loading" class="spinner-wrap"><div class="spinner"></div></div>
+      <div id="errorBox" class="status hidden"></div>
+
+      <div id="folderView" class="grid hidden"></div>
+      <div id="fileView" class="list hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Configure your GitHub repo here ----
+    const OWNER = "odinathofficial-art";
+    const REPO = "Pre-Eng";
+    const API_URL = `https://api.github.com/repos/${OWNER}/${REPO}/contents/`;
+
+    const folderIconSVG = `
+      <svg viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 3.5C1 2.12 2.12 1 3.5 1H8.6c.66 0 1.28.32 1.66.87L11.6 3.6c.19.27.5.43.82.43H20.5C21.88 4 23 5.12 23 6.5v10C23 17.88 21.88 19 20.5 19h-17C2.12 19 1 17.88 1 16.5v-13Z"
+              fill="none" stroke="#3c5a4a" stroke-width="1.4" stroke-linejoin="round"/>
+      </svg>`;
+
+    const fileIconSVG = `
+      <svg viewBox="0 0 20 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 2.5C2 1.67 2.67 1 3.5 1H12l6 6v14.5c0 .83-.67 1.5-1.5 1.5h-13C2.67 23 2 22.33 2 21.5v-19Z"
+              fill="none" stroke="#3c5a4a" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M12 1v6h6" fill="none" stroke="#3c5a4a" stroke-width="1.4" stroke-linejoin="round"/>
+      </svg>`;
+
+    const loadingEl = document.getElementById("loading");
+    const errorEl = document.getElementById("errorBox");
+    const folderViewEl = document.getElementById("folderView");
+    const fileViewEl = document.getElementById("fileView");
+    const crumbEl = document.getElementById("crumb");
+    const subtitleEl = document.getElementById("subtitle");
+    document.getElementById("backBtn").addEventListener("click", showFolders);
+
+    let folders = {}; // { "Puzzle": [ {name, display, num, path} ] }
+
+    function titleCase(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Splits "Puzzle 2.html" -> { group: "Puzzle", display: "Puzzle 2", num: 2 }
+    function parseFileName(name) {
+      const withoutExt = name.replace(/\.html?$/i, "");
+      const match = withoutExt.match(/^(.*?)[\s_-]*(\d+)\s*$/);
+      if (match) {
+        return {
+          group: match[1].trim(),
+          display: withoutExt.trim(),
+          num: parseInt(match[2], 10)
+        };
+      }
+      return { group: withoutExt.trim(), display: withoutExt.trim(), num: 0 };
+    }
+
+    async function loadFiles() {
+      try {
+        // Always fetch a fresh file list (no browser/CDN cache)
+        const res = await fetch(API_URL + "?t=" + Date.now(), {
+          cache: "no-store",
+          headers: { "Accept": "application/vnd.github+json" }
+        });
+        if (!res.ok) {
+          throw new Error(res.status === 403 ? "GitHub API rate limit reached. Try again shortly." : `Failed to load (status ${res.status})`);
+        }
+        const items = await res.json();
+
+        items
+          .filter(item => item.type === "file" && /\.html?$/i.test(item.name) && item.name.toLowerCase() !== "index.html")
+          .forEach(item => {
+            const parsed = parseFileName(item.name);
+            const groupKey = parsed.group.toLowerCase();
+            if (!folders[groupKey]) {
+              folders[groupKey] = { label: titleCase(parsed.group), files: [] };
+            }
+            folders[groupKey].files.push({
+              display: parsed.display,
+              num: parsed.num,
+              path: item.name
+            });
+          });
+
+        Object.values(folders).forEach(folder => {
+          folder.files.sort((a, b) => b.num - a.num);
+        });
+
+        loadingEl.classList.add("hidden");
+        showFolders();
+      } catch (err) {
+        loadingEl.classList.add("hidden");
+        errorEl.textContent = err.message || "Something went wrong while loading files.";
+        errorEl.classList.remove("hidden");
+      }
+    }
+
+    function makeCard(iconSVG, label, onActivate) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      card.innerHTML = `
+        <span class="folder-icon">${iconSVG}</span>
+        <span class="card-label">${label}</span>
+      `;
+      card.addEventListener("click", onActivate);
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onActivate(); }
+      });
+      return card;
+    }
+
+    function showFolders() {
+      fileViewEl.classList.add("hidden");
+      crumbEl.classList.remove("show");
+      subtitleEl.textContent = "Choose a section to continue";
+      folderViewEl.innerHTML = "";
+
+      const groupKeys = Object.keys(folders).sort();
+      if (groupKeys.length === 0) {
+        errorEl.textContent = "No files found in the repository yet.";
+        errorEl.classList.remove("hidden");
+        folderViewEl.classList.add("hidden");
+        return;
+      }
+      errorEl.classList.add("hidden");
+
+      groupKeys.forEach(key => {
+        const folder = folders[key];
+        const card = makeCard(folderIconSVG, folder.label, () => showFiles(key));
+        folderViewEl.appendChild(card);
+      });
+      folderViewEl.classList.remove("hidden");
+    }
+
+    function showFiles(groupKey) {
+      const folder = folders[groupKey];
+      folderViewEl.classList.add("hidden");
+      subtitleEl.textContent = folder.label;
+      crumbEl.classList.add("show");
+      fileViewEl.innerHTML = "";
+
+      folder.files.forEach(file => {
+        const card = makeCard(fileIconSVG, file.display, () => {
+          window.location.href = file.path;
+        });
+        fileViewEl.appendChild(card);
+      });
+      fileViewEl.classList.remove("hidden");
+    }
+
+    loadFiles();
+  </script>
+</body>
+</html>
